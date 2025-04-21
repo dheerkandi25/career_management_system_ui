@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from "react";
 import { Location } from "./Interfaces/interfaces";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -9,7 +10,7 @@ export default function Home() {
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
   const [uploadMessage, setUploadMessage] = useState(""); // State to display upload status
-  const [formSubmitted, setFormSubmitted] = useState(false); // State to track form submission
+  const router = useRouter();
 
   const handleCityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const city = event.target.value;
@@ -61,56 +62,32 @@ export default function Home() {
     }
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleNext = () => {
+    // Collect form data
+    const formData = {
+      first_name: (document.getElementById("first_name") as HTMLInputElement)?.value,
+      last_name: (document.getElementById("last_name") as HTMLInputElement)?.value,
+      email_id: (document.getElementById("email_id") as HTMLInputElement)?.value,
+      phone: (document.getElementById("phone") as HTMLInputElement)?.value,
+      address: (document.getElementById("address") as HTMLInputElement)?.value,
+      city: selectedCity,
+      state: selectedState,
+      zip: (document.getElementById("zip") as HTMLInputElement)?.value,
+      country: selectedCountry,
+      location_id: selectedLocationId,
+      resume_name: (document.getElementById("resume") as HTMLInputElement)?.files?.[0]?.name || "",
+    };
 
-    // Construct the JSON object from the form data
-    const formData = new FormData(event.currentTarget);
-    const jsonData: { [key: string]: any } = {};
-
-    formData.forEach((value, key) => {
-      jsonData[key] = value;
+    // Store each key-value pair in localStorage
+    Object.entries(formData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        localStorage.setItem(key, value.toString());
+      }
     });
 
-    // Add location_id to the JSON object
-    if (selectedLocationId !== null) {
-      jsonData["location_id"] = selectedLocationId;
-    }
-
-    // Add resume_name to the JSON object
-    const resumeInput = event.currentTarget.elements.namedItem("resume") as HTMLInputElement;
-    if (resumeInput && resumeInput.files && resumeInput.files.length > 0) {
-      const resumeFile = resumeInput.files[0];
-      jsonData["resume_name"] = resumeFile.name;
-    }
-
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/applicant`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(jsonData), // Send the JSON object as the request body
-      });
-
-      if (response.ok) {
-        setFormSubmitted(true); // Set formSubmitted to true on successful submission
-      } else {
-        console.error("Form submission failed");
-      }
-    } catch (error) {
-      console.error("Form submission error:", error);
-    }
+    // Navigate to the next page
+    router.push("/education");
   };
-
-  if (formSubmitted) {
-    // Render the success message on a black page
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-white text-black">
-        <h1 className="text-3xl font-bold">Form Submitted Successfully</h1>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-gray-100">
@@ -118,7 +95,7 @@ export default function Home() {
         <h1 className="text-center text-2xl font-bold">Career Management System</h1>
       </header>
       <main className="flex justify-center items-center flex-grow w-full">
-        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
+        <form className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
           <div className="mb-4">
             <label htmlFor="first_name" className="block text-gray-700 font-bold mb-2">
               First Name:
@@ -144,7 +121,7 @@ export default function Home() {
             <input type="tel" id="phone" name="phone" required className="w-full px-3 py-2 border rounded-lg text-black" />
           </div>
           <div className="mb-4">
-            <label htmlFor="Address" className="block text-gray-700 font-bold mb-2">
+            <label htmlFor="address" className="block text-gray-700 font-bold mb-2">
               Address:
             </label>
             <input id="address" name="address" required className="w-full px-3 py-2 border rounded-lg text-black" />
@@ -201,8 +178,12 @@ export default function Home() {
             />
           </div>
           <div>
-            <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-              Submit
+            <button
+              type="button"
+              onClick={handleNext}
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Next
             </button>
           </div>
         </form>
